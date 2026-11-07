@@ -6,7 +6,9 @@ The library crate is `kinogaki-png-format`; `plugin/` (`kinogaki-plugin-png`) is
 
 ## Reading
 
-One layer, `""`: the file's channels (`Y`, `Y A`, `R G B` or `R G B A`; an indexed file as RGB, with alpha when its palette has transparency; `tRNS` adds alpha) of 8 or 16-bit samples, every bit depth and Adam7 interlacing, straight alpha. Its colors are tagged as the file says: an `sRGB` chunk as the sRGB display (`color::SRGB_DISPLAY`), an `iCCP` chunk as its profile, else nothing is said. A file in memory (an embedded one) reads as one on disk.
+One layer, `""`: the file's channels (`Y`, `Y A`, `R G B` or `R G B A`; an indexed file as RGB, with alpha when its palette has transparency; `tRNS` adds alpha) of 8 or 16-bit samples, every bit depth and Adam7 interlacing, straight alpha. Its colors are tagged as the file says: an `sRGB` chunk as the sRGB display (`color::SRGB_DISPLAY`), an `iCCP` chunk as its profile, else nothing is said; a profile that doesn't inflate leaves the colors unknown, said. A file in memory (an embedded one) reads as one on disk.
+
+A file is read as the SDK's policy for untrusted files says (Studio's `docs/plugins/FORMAT.md`): its chunks are read first, and what decoding takes is checked against the read's budget before anything is inflated (the compressed data's expansion, the inflated rows, the samples and the Image), as is its size (2²⁸ pixels at most); a cancelled read stops within a row.
 
 ## Writing
 
@@ -23,7 +25,7 @@ The main layer (`""`, else the first) at the bit depth the `depth` option names 
 
 ## Tests and data
 
-`tests/format.rs` runs the format through the SDK's contract: every file of PngSuite reads as Pillow decodes it (`tools/pngsuite_oracle.py` writes `tests/fixtures/pngsuite/expected.txt`, grey transparency as the PNG specification says, since Pillow compares a low-bit grey file's transparent value unscaled), the corrupt ones fail naming the file; tags read and written; an sRGB image writes the bytes the codec writes and reads back; floats premultiplied are written straight at either depth; damaged and truncated files fail without panicking. The oracle runs locally (Pillow) and is never a dependency.
+`tests/format.rs` runs the format through the SDK's contract: every file of PngSuite reads as Pillow decodes it (`tools/pngsuite_oracle.py` writes `tests/fixtures/pngsuite/expected.txt`, grey transparency as the PNG specification says, since Pillow compares a low-bit grey file's transparent value unscaled), the corrupt ones fail naming the file; tags read and written; an sRGB image writes the bytes the codec writes and reads back; floats premultiplied are written straight at either depth; damaged and truncated files fail without panicking. `tests/hostile.rs` reads hostile files made in code as Import reads them (a cut stream claiming a gigabyte, one within its ratio, sizes past the limit, a picture past a small budget, a profile that doesn't inflate, a cancelled read): each a clean error or warning within seconds. The oracle runs locally (Pillow) and is never a dependency.
 
 PngSuite (`tests/fixtures/pngsuite`) is Willem van Schaik's test suite (2017-07-19 release), freely distributable: "Permission to use, copy, modify and distribute these images for any purpose and without fee is hereby granted" ([PngSuite.LICENSE](tests/fixtures/pngsuite/PngSuite.LICENSE)).
 
