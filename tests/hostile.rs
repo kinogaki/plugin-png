@@ -140,6 +140,17 @@ fn a_picture_past_the_pixel_limit_is_refused_before_decoding() {
         let why = read(&png(width, height, 0, &[], &rows), ReadLimits::default()).unwrap_err();
         assert!(why.message().contains("hostile.png"), "{why}");
     }
+    // The limit is the read's budget's.
+    let fewer = ReadLimits {
+        pixels: 64 * 64 - 1,
+        ..ReadLimits::default()
+    };
+    let why = read(&png(64, 64, 0, &[], &rows), fewer).unwrap_err();
+    assert!(
+        why.message()
+            .contains("64 × 64 pixels, over the read's limit"),
+        "{why}"
+    );
 }
 
 #[test]

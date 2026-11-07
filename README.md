@@ -8,7 +8,7 @@ The library crate is `kinogaki-png-format`; `plugin/` (`kinogaki-plugin-png`) is
 
 One layer, `""`: the file's channels (`Y`, `Y A`, `R G B` or `R G B A`; an indexed file as RGB, with alpha when its palette has transparency; `tRNS` adds alpha) of 8 or 16-bit samples, every bit depth and Adam7 interlacing, straight alpha. Its colors are tagged as the file says: an `sRGB` chunk as the sRGB display (`color::SRGB_DISPLAY`), an `iCCP` chunk as its profile, else nothing is said; a profile that doesn't inflate leaves the colors unknown, said. A file in memory (an embedded one) reads as one on disk.
 
-A file is read as the SDK's policy for untrusted files says (Studio's `docs/plugins/FORMAT.md`): its chunks are read first, and what decoding takes is checked against the read's budget before anything is inflated (the compressed data's expansion, the inflated rows, the samples and the Image), as is its size (2²⁸ pixels at most); a cancelled read stops within a row.
+A file is read as the SDK's policy for untrusted files says (Studio's `docs/plugins/FORMAT.md`): its chunks are read first, and what decoding takes is checked against the read's budget before anything is inflated (the compressed data's expansion, the inflated rows, the samples and the Image), as is its size (the budget's pixels, 2²⁸ by default); a cancelled read stops within a row.
 
 ## Writing
 

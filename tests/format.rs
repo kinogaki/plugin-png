@@ -9,6 +9,7 @@ use kinogaki_studio_api::{
     FileFormat, FileItem, Imported, Input, Purpose, Reading, Units, Value, Writing, standard,
 };
 use kinogaki_studio_api_testing::Unconverted;
+use kinogaki_studio_api_testing::format::Scratch;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -29,23 +30,6 @@ fn image(input: &Input<'_>) -> Image {
     standard::image().get(data).unwrap().clone()
 }
 
-/// A scratch file of its own, gone when dropped.
-struct Scratch(PathBuf);
-
-impl Scratch {
-    fn new(name: &str) -> Self {
-        let dir = std::env::temp_dir().join(format!("kinogaki-png-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
-        Scratch(dir.join(name))
-    }
-}
-
-impl Drop for Scratch {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_file(&self.0);
-    }
-}
-
 /// `image` written with `set` over the defaults: the file's bytes and the
 /// warnings.
 fn written(image: &Image, set: &[(&str, &str)]) -> (Vec<u8>, Vec<String>) {
@@ -54,25 +38,20 @@ fn written(image: &Image, set: &[(&str, &str)]) -> (Vec<u8>, Vec<String>) {
     for (name, key) in set {
         options.insert((*name).into(), Value::Choice((*key).into()));
     }
-    let file = Scratch::new(&format!(
-        "{}.png",
-        std::thread::current()
-            .name()
-            .unwrap_or("t")
-            .replace("::", "-")
-    ));
+    let dir = Scratch::new("png");
+    let file = dir.join("written.png");
     let colors = Unconverted;
     let item = FileItem::top("picture", standard::image().wrap(image.clone()));
     let warnings = writer
         .write(
-            &file.0,
+            &file,
             &[item],
             &Writing::new(Units::default(), &colors),
             &options,
         )
         .unwrap();
     let said = warnings.iter().map(|w| w.message.clone()).collect();
-    (std::fs::read(&file.0).unwrap(), said)
+    (std::fs::read(&file).unwrap(), said)
 }
 
 /// An Image of one layer.
@@ -334,12 +313,13 @@ fn what_a_png_cant_hold_is_said_and_ids_are_refused() {
         [2]
     );
     let ids = picture(&["id"], Sample::U32, None, false, &7u32.to_ne_bytes());
-    let file = Scratch::new("ids.png");
+    let dir = Scratch::new("png-ids");
+    let file = dir.join("ids.png");
     let colors = Unconverted;
     let item = FileItem::top("ids", standard::image().wrap(ids));
     let writer = Png.writer().unwrap();
     let refused = writer.write(
-        &file.0,
+        &file,
         &[item],
         &Writing::new(Units::default(), &colors),
         &writer.options(),

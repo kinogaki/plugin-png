@@ -8,9 +8,6 @@ use kinogaki_studio_api::{Diagnostic, Error, FileItem, Imported, Input, Reading,
 use std::path::Path;
 use std::sync::Arc;
 
-/// The most pixels a file may have (2²⁸).
-const MAX_PIXELS: u64 = 1 << 28;
-
 /// `input` as one item holding its Image, named after the file. What
 /// decoding takes is checked against the read's budget before anything is
 /// inflated: the compressed data's expansion, the inflated rows, the decoded
@@ -23,9 +20,12 @@ pub(crate) fn read(input: &Input<'_>, reading: &Reading<'_>) -> Result<Imported,
     let png = kinogaki_png::Png::read(&bytes).map_err(|e| at(&e))?;
     let (width, height) = (png.width(), png.height());
     let pixels = u64::from(width) * u64::from(height);
-    if pixels > MAX_PIXELS {
-        return Err(at(&format_args!("{width} × {height} pixels, over 2²⁸")));
-    }
+    (reading.budget.pixels(u64::from(width), u64::from(height))).map_err(|e| {
+        match e.is_cancelled() {
+            true => e,
+            false => at(&e.message()),
+        }
+    })?;
     let window = Rect::new([0, 0], [width as i32, height as i32]).map_err(|e| at(&e))?;
     let samples = pixels * u64::from(png.channels());
     let held = samples * if png.wide() { 2 } else { 1 };
