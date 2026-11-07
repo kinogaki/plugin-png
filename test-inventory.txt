@@ -16,3 +16,4 @@ kinogaki-png-format/hostile test a_picture_past_the_pixel_limit_is_refused_befor
 kinogaki-png-format/hostile test a_profile_that_doesnt_inflate_leaves_the_colors_unknown
 kinogaki-png-format/lib test icc::tests::a_profile_is_named_by_its_description_of_either_version
 kinogaki-png-format/lib test icc::tests::a_profile_without_a_readable_description_is_an_icc_profile
+kinogaki-png-format/lib test read::tests::wide_samples_tile_as_their_plane_would

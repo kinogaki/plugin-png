@@ -1,7 +1,9 @@
 //! A PNG to one standard Image ([`read`]).
 use kinogaki_png::Samples;
 use kinogaki_studio_api::color::SRGB_DISPLAY;
-use kinogaki_studio_api::geometry::image::{ColorTag, Encoding, Format, Image, Rect, Sample};
+use kinogaki_studio_api::geometry::image::{
+    ColorTag, Encoding, Format, Image, Rect, Sample, TILE, Tile, tiles_of,
+};
 use kinogaki_studio_api::{Diagnostic, Error, FileItem, Imported, Input, Reading, standard};
 use std::path::Path;
 use std::sync::Arc;
@@ -73,22 +75,81 @@ fn image(decoded: kinogaki_png::Image, tag: ColorTag, window: Rect) -> Result<Im
         3 => &["R", "G", "B"],
         _ => &["R", "G", "B", "A"],
     };
-    let (sample, bytes) = match decoded.samples {
-        Samples::U8(v) => (Sample::U8, v),
-        Samples::U16(v) => (
-            Sample::U16,
-            v.iter().flat_map(|s| s.to_ne_bytes()).collect(),
-        ),
-        _ => return Err(Error::invalid("a PNG holds 8 or 16-bit samples")),
-    };
-    let format = Format {
+    let format = |sample| Format {
         name: "".into(),
         channels: names.iter().map(|&n| Arc::from(n)).collect(),
         sample,
         encoding: Encoding::Color {
-            tag,
+            tag: tag.clone(),
             premultiplied: false,
         },
     };
-    Image::builder(window).plane(format, &bytes).build()
+    let built = Image::builder(window);
+    match decoded.samples {
+        Samples::U8(v) => built.plane(format(Sample::U8), &v).build(),
+        Samples::U16(v) => {
+            let format = format(Sample::U16);
+            let tiles = tiles(&v, window.size(), usize::from(decoded.channels));
+            built.tiles(format, tiles).build()
+        }
+        _ => Err(Error::invalid("a PNG holds 8 or 16-bit samples")),
+    }
+}
+
+/// 16-bit `samples` (`channels` a pixel over `size`, rows from the top) as
+/// the Image's tiles of native-order bytes, written a tile at a time: no
+/// plane of bytes the size of the image besides them.
+fn tiles(samples: &[u16], size: [u32; 2], channels: usize) -> Vec<Option<Tile>> {
+    let [width, height] = size.map(|n| n as usize);
+    let side = TILE as usize;
+    let [across, down] = tiles_of(size).map(|n| n as usize);
+    let mut tiles = Vec::with_capacity(across * down);
+    for ty in 0..down {
+        for tx in 0..across {
+            let mut bytes = vec![0u8; side * side * channels * 2];
+            let run = side.min(width - tx * side) * channels;
+            for y in 0..side.min(height - ty * side) {
+                let from = ((ty * side + y) * width + tx * side) * channels;
+                let to = &mut bytes[y * side * channels * 2..][..run * 2];
+                for (pair, sample) in to
+                    .as_chunks_mut::<2>()
+                    .0
+                    .iter_mut()
+                    .zip(&samples[from..from + run])
+                {
+                    *pair = sample.to_ne_bytes();
+                }
+            }
+            tiles.push(Some(Tile::new(bytes)));
+        }
+    }
+    tiles
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 16-bit samples tile as a plane of their native bytes would.
+    #[test]
+    fn wide_samples_tile_as_their_plane_would() {
+        let size = [70u32, 65];
+        let samples: Vec<u16> = (0..70 * 65 * 3)
+            .map(|k| (k * 7919 % 65_536) as u16)
+            .collect();
+        let format = Format {
+            channels: ["R", "G", "B"].map(Arc::from).into(),
+            ..Format::rgba(Sample::U16, Encoding::Raw)
+        };
+        let window = Rect::new([0, 0], [70, 65]).unwrap();
+        let bytes: Vec<u8> = samples.iter().flat_map(|s| s.to_ne_bytes()).collect();
+        let plane = Image::builder(window)
+            .plane(format.clone(), &bytes)
+            .build()
+            .unwrap();
+        let tiled = (Image::builder(window).tiles(format, tiles(&samples, size, 3)))
+            .build()
+            .unwrap();
+        assert_eq!(tiled, plane);
+    }
 }
