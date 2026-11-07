@@ -1,0 +1,11 @@
+# Every test of this repository: <package>/<target> <kind> <name>.
+# Written by `python3 tools/check_all.py --inventory`; every check compares its tests with it.
+kinogaki-png-format/format test a_damaged_or_truncated_file_is_an_error_naming_it
+kinogaki-png-format/format test a_file_says_its_display_and_keeps_its_channels_and_depth
+kinogaki-png-format/format test a_profile_is_named_by_its_description_and_a_named_space_is_said
+kinogaki-png-format/format test an_srgb_image_writes_the_bytes_the_codec_writes_and_reads_back
+kinogaki-png-format/format test every_pngsuite_file_reads_as_pillow_decodes_it_and_the_corrupt_ones_fail
+kinogaki-png-format/format test floats_premultiplied_are_written_straight_at_the_depth_asked
+kinogaki-png-format/format test what_a_png_cant_hold_is_said_and_ids_are_refused
+kinogaki-png-format/lib test icc::tests::a_profile_is_named_by_its_description_of_either_version
+kinogaki-png-format/lib test icc::tests::a_profile_without_a_readable_description_is_an_icc_profile

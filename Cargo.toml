@@ -1,0 +1,28 @@
+[package]
+name = "kinogaki-png-format"
+description = "PNG as a format plugin on the Kinogaki Studio SDK: a PNG reads as one standard Image as the file holds it, and an Image writes as one PNG"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.98"
+publish = false
+license = "MIT OR Apache-2.0"
+
+# The format builds from its own repository, the public SDK's and lib-image's
+# alone, checked out side by side as Studio's tree lays them out (README
+# "Building"): its manifest names everything it needs instead of inheriting
+# it from the tree.
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+dbg_macro = "deny"
+todo = "deny"
+
+[dependencies]
+kinogaki-studio-api = { path = "../../sdk/crates/api" }
+# The PNG codec (lib-image's): decoding every PNG, encoding with a display tag.
+kinogaki-png = { path = "../../libs/lib-image/crates/png" }
+
+[dev-dependencies]
+# The SDK's color service that converts nothing.
+kinogaki-studio-api-testing = { path = "../../sdk/crates/api-testing" }
