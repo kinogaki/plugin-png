@@ -290,7 +290,7 @@ fn floats_premultiplied_are_written_straight_at_the_depth_asked() {
         true,
         &values,
     );
-    let (eight, _) = written(&premultiplied, &[]);
+    let (eight, _) = written(&premultiplied, &[("depth", "8")]);
     let back = image(&Input::memory("8.png", &eight));
     assert_eq!(back.plane(0).unwrap(), [128, 255, 0, 128, 255, 0, 0, 255]);
     let (sixteen, _) = written(&premultiplied, &[("depth", "16")]);
@@ -298,6 +298,19 @@ fn floats_premultiplied_are_written_straight_at_the_depth_asked() {
     assert_eq!(back.layers()[0].format().sample, Sample::U16);
     let half = 32768.0 / 65535.0;
     assert_eq!(back.read_pixel(0, 0, 0), [half, 1.0, 0.0, half]);
+}
+
+#[test]
+fn a_file_writes_back_at_its_own_depth() {
+    for name in [
+        "basn0g16", "basn2c16", "basn4a16", "basn6a16", "basn2c08", "basn0g04",
+    ] {
+        let read = image(&Input::file(&suite().join(format!("{name}.png"))));
+        let (file, warnings) = written(&read, &[]);
+        assert!(warnings.is_empty(), "{name}: {warnings:?}");
+        let back = image(&Input::memory("back.png", &file));
+        assert_eq!(back, read, "{name}");
+    }
 }
 
 #[test]

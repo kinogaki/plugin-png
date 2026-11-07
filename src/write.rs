@@ -10,7 +10,8 @@ use kinogaki_studio_api::{
 };
 use std::path::Path;
 
-/// The option naming the bits a sample is written with (`8`, `16`).
+/// The option naming the bits a sample is written with: `image` (as the
+/// Image holds them: 8 for 8-bit samples, 16 for any wider), `8` or `16`.
 const DEPTH: &str = "depth";
 /// The option naming the compression's effort (`fast`, `balanced`, `small`).
 const COMPRESSION: &str = "compression";
@@ -28,13 +29,17 @@ impl FormatWriter for Writer {
     }
     fn options(&self) -> FormatOptions {
         FormatOptions::from([
-            (DEPTH.to_owned(), Value::Choice("8".into())),
+            (DEPTH.to_owned(), Value::Choice("image".into())),
             (COMPRESSION.to_owned(), Value::Choice("balanced".into())),
         ])
     }
     fn schema(&self, chosen: &FormatOptions) -> Schema {
         let key = |name| options::option(chosen, name, Value::choice).unwrap_or_default();
-        let depth = [("8", "8 Bits"), ("16", "16 Bits")];
+        let depth = [
+            ("image", "As the Image"),
+            ("8", "8 Bits"),
+            ("16", "16 Bits"),
+        ];
         let effort = [
             ("fast", "Fast"),
             ("balanced", "Balanced"),
@@ -59,7 +64,7 @@ impl FormatWriter for Writer {
         chosen: &FormatOptions,
     ) -> Result<Vec<Diagnostic>, Error> {
         writing.check()?;
-        let sixteen = options::option(chosen, DEPTH, Value::choice)? == "16";
+        let depth = options::option(chosen, DEPTH, Value::choice)?;
         let level = match options::option(chosen, COMPRESSION, Value::choice)? {
             "fast" => Level::Fast,
             "small" => Level::Small,
@@ -88,6 +93,11 @@ impl FormatWriter for Writer {
                 image.layers().len() - 1
             )));
         }
+        let sixteen = match depth {
+            "8" => false,
+            "16" => true,
+            _ => image.layers()[at].format().sample != Sample::U8,
+        };
         let png = pixels(image, at, sixteen)?;
         let tag = tag(image, at, &mut warnings);
         let tag = tag.as_ref().map(|(name, profile)| match profile {

@@ -10,7 +10,8 @@
 //!   ([`SRGB_DISPLAY`](kinogaki_studio_api::color::SRGB_DISPLAY)), an
 //!   `iCCP` chunk its profile, else nothing is said.
 //! - **Writing.** The main layer (`""`, else the first), at the bit depth the
-//!   `depth` option names, its color divided by its alpha when
+//!   `depth` option names (by default the Image's: 16 bits for samples
+//!   wider than 8), its color divided by its alpha when
 //!   premultiplied, tagged from its [`ColorTag`]: the sRGB display as an
 //!   `sRGB` chunk, a profile as an `iCCP` chunk named by the profile's own
 //!   description. Other layers, and a tag PNG can't hold, are left out with

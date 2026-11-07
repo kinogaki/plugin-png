@@ -2,6 +2,7 @@
 # Written by `python3 tools/check_all.py --inventory`; every check compares its tests with it.
 kinogaki-png-format/format test a_damaged_or_truncated_file_is_an_error_naming_it
 kinogaki-png-format/format test a_file_says_its_display_and_keeps_its_channels_and_depth
+kinogaki-png-format/format test a_file_writes_back_at_its_own_depth
 kinogaki-png-format/format test a_profile_is_named_by_its_description_and_a_named_space_is_said
 kinogaki-png-format/format test an_srgb_image_writes_the_bytes_the_codec_writes_and_reads_back
 kinogaki-png-format/format test every_pngsuite_file_reads_as_pillow_decodes_it_and_the_corrupt_ones_fail
