@@ -302,8 +302,8 @@ fn what_a_png_cant_hold_is_said_and_ids_are_refused() {
     };
     let window = Rect::new([0, 0], [1, 1]).unwrap();
     let two = Image::builder(window)
-        .plane(format("depth"), &[1])
-        .plane(format(""), &[2])
+        .plane(format("depth"), &[1u8])
+        .plane(format(""), &[2u8])
         .build()
         .unwrap();
     let (file, warnings) = written(&two, &[]);
